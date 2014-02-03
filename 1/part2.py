@@ -8,15 +8,17 @@ Environment:
 Last modified date:
 """
 
+from __future__ import division
+import os, io, re, sys, math, operator
 
-import os, io, re, sys
 
 docID = {}
+N = 0  #total number of scanned files
 
 def scanFolder(rootDir): 
     list_dirs = os.walk(rootDir) 
     
-
+    global N 
     count = 1
     for root, dirs, files in list_dirs: 
 #        for d in dirs: 
@@ -25,6 +27,7 @@ def scanFolder(rootDir):
         for f in files:            
             a, b = os.path.splitext(f)
             if b == ".txt":
+                N = N + 1
                 docList = {}
                 txt = open(os.path.join(root, f), "r").readlines() 
                 for line in txt:
@@ -66,11 +69,35 @@ def searchFile(qTerm):
             else:
                 result.remove(f)
             count+=1
-
-    print result
  
     if len(result) == 0:
         print "Sorry, no match."
+    return result
+
+def tfidf(qTerm,result):
+    tfidf = {}
+#   print result
+    for i in range(len(qTerm)):
+        tf = {}
+        df = len(result)
+        for f in result:         
+            tf.update({f:docID[f].get(qTerm[i])})
+            tfidf.update({qTerm[i]: [0,tf]})
+        tfidf.update({qTerm[i]: [df,tf]})
+    print tfidf
+    score = {}
+    for t in qTerm:
+
+        idf = math.log10(N/df)
+        print "N,df",N,df,idf
+        for d in result:
+            Wtf = 1.0 + math.log10(tfidf[t][1].get(d))
+            s = Wtf * idf
+            print Wtf,idf
+            score.update({d:s})
+ #   print score
+    sorted_score = sorted(score.iteritems(), key=operator.itemgetter(1), reverse=True)
+    print sorted_score
 
 
 
@@ -94,4 +121,5 @@ while True:
             print "88"
             sys.exit(0)
     print qTerm
-    searchFile(qTerm)
+    satisfiedDoc = searchFile(qTerm)
+    tfidf(qTerm,satisfiedDoc)
